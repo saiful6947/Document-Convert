@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Document Converter - PDF to DOC/Excel with OCR</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            padding: 40px;
+        }
+
+        .upload-section {
+            margin-bottom: 40px;
+        }
+
+        .drag-drop-area {
+            border: 3px dashed #3498db;
+            border-radius: 15px;
+            padding: 60px 20px;
+            text-align: center;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .drag-drop-area:hover,
+        .drag-drop-area.dragover {
+            border-color: #2980b9;
+            background: #e3f2fd;
+            transform: translateY(-2px);
+        }
+
+        .drag-drop-area.has-file {
+            border-color: #27ae60;
+            background: #d5f4e6;
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            color: #3498db;
+            margin-bottom: 20px;
+        }
+
+        .upload-text {
+            font-size: 1.3rem;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .upload-subtext {
+            color: #7f8c8d;
+            font-size: 1rem;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-info {
+            display: none;
+            background: #ecf0f1;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .file-info.show {
+            display: block;
+        }
+
+        .file-details {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .file-icon {
+            font-size: 2rem;
+            color: #e74c3c;
+        }
+
+        .file-meta h4 {
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .file-meta p {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+
+        .controls-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .control-group {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid #e9ecef;
+        }
+
+        .control-group h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .dropdown {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+
+        .dropdown:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .ocr-options {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            cursor: pointer;
+            color: #2c3e50;
+            font-weight: 500;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 40px;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            min-width: 140px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60, #229954);
+            color: white;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .progress-section {
+            display: none;
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .progress-section.show {
+            display: block;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #ecf0f1;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2980b9);
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+
+        .progress-text {
+            color: #2c3e50;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .preview-section {
+            display: none;
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .preview-section.show {
+            display: block;
+        }
+
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .preview-content {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            min-height: 300px;
+            border: 1px solid #e9ecef;
+            font-family: 'Times New Roman', serif;
+            line-height: 1.6;
+        }
+
+        .excel-preview {
+            overflow-x: auto;
+        }
+
+        .excel-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: Arial, sans-serif;
+        }
+
+        .excel-table th,
+        .excel-table td {
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            text-align: left;
+        }
+
+        .excel-table th {
+            background: #f2f2f2;
+            font-weight: 600;
+        }
+
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: #2c3e50;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .error-message {
+            display: none;
+            background: #fee;
+            color: #c0392b;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #e74c3c;
+            margin: 20px 0;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .success-message {
+            display: none;
+            background: #d5f4e6;
+            color: #27ae60;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #27ae60;
+            margin: 20px 0;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .main-content {
+                padding: 20px;
+            }
+            
+            .controls-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+
+        .bangla-text {
+            font-family: 'SolaimanLipi', 'Kalpurush', 'Nikosh', Arial, sans-serif;
+        }
+
+        .language-indicator {
+            display: inline-block;
+            padding: 4px 8px;
+            background: #3498db;
+            color: white;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔄 Advanced Document Converter</h1>
+            <p>Convert PDF to DOC/Word/Excel with OCR Support for Bangla & English</p>
+        </div>
+
+        <div class="main-content">
+            <!-- Upload Section -->
+            <div class="upload-section">
+                <div class="drag-drop-area" id="dragDropArea">
+                    <div class="upload-icon">📄</div>
+                    <div class="upload-text">Drag & Drop your PDF file here</div>
+                    <div class="upload-subtext">or click to browse files (Max 50MB)</div>
+                    <input type="file" id="fileInput" class="file-input" accept=".pdf" />
+                </div>
+
+                <div class="file-info" id="fileInfo">
+                    <div class="file-details">
+                        <div class="file-icon">📄</div>
+                        <div class="file-meta">
+                            <h4 id="fileName">Document.pdf</h4>
+                            <p id="fileSize">2.5 MB • PDF Document</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Error/Success Messages -->
+            <div class="error-message" id="errorMessage">
+                <strong>Error:</strong> <span id="errorText"></span>
+            </div>
+            <div class="success-message" id="successMessage">
+                <strong>Success:</strong> <span id="successText"></span>
+            </div>
+
+            <!-- Controls Section -->
+            <div class="controls-section">
+                <div class="control-group">
+                    <h3>📋 Output Format</h3>
+                    <select class="dropdown" id="formatSelect">
+                        <option value="">Select conversion format</option>
+                        <option value="doc">DOC Document</option>
+                        <option value="docx">Word Document (DOCX)</option>
+                        <option value="xlsx">Excel Spreadsheet</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <h3>🔍 OCR Settings</h3>
+                    <p style="color: #7f8c8d; margin-bottom: 15px;">Select languages for text recognition</p>
+                    <div class="ocr-options">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="englishOCR" checked>
+                            <label for="englishOCR">English</label>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="banglaOCR">
+                            <label for="banglaOCR" class="bangla-text">বাংলা (Nikosh)</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <button class="btn btn-primary tooltip" id="convertBtn" disabled>
+                    🔄 Convert
+                    <span class="tooltiptext">Start the conversion process</span>
+                </button>
+                <button class="btn btn-secondary tooltip" id="resetBtn">
+                    🔄 Reset
+                    <span class="tooltiptext">Clear all files and settings</span>
+                </button>
+                <button class="btn btn-success tooltip" id="downloadBtn" disabled>
+                    ⬇️ Download
+                    <span class="tooltiptext">Download converted file</span>
+                </button>
+            </div>
+
+            <!-- Progress Section -->
+            <div class="progress-section" id="progressSection">
+                <div class="progress-text" id="progressText">Initializing conversion...</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div id="progressPercentage">0%</div>
+            </div>
+
+            <!-- Preview Section -->
+            <div class="preview-section" id="previewSection">
+                <div class="preview-header">
+                    <h3>📖 Document Preview</h3>
+                    <span class="language-indicator" id="languageIndicator">English</span>
+                </div>
+                <div class="preview-content" id="previewContent">
+                    <!-- Preview content will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class DocumentConverter {
+            constructor() {
+                this.currentFile = null;
+                this.convertedData = null;
+                this.initializeEventListeners();
+            }
+
+            initializeEventListeners() {
+                const dragDropArea = document.getElementById('dragDropArea');
+                const fileInput = document.getElementById('fileInput');
+                const convertBtn = document.getElementById('convertBtn');
+                const resetBtn = document.getElementById('resetBtn');
+                const downloadBtn = document.getElementById('downloadBtn');
+                const formatSelect = document.getElementById('formatSelect');
+
+                // Drag and drop events
+                dragDropArea.addEventListener('click', () => fileInput.click());
+                dragDropArea.addEventListener('dragover', this.handleDragOver.bind(this));
+                dragDropArea.addEventListener('dragleave', this.handleDragLeave.bind(this));
+                dragDropArea.addEventListener('drop', this.handleDrop.bind(this));
+
+                // File input change
+                fileInput.addEventListener('change', this.handleFileSelect.bind(this));
+
+                // Button events
+                convertBtn.addEventListener('click', this.convertDocument.bind(this));
+                resetBtn.addEventListener('click', this.resetAll.bind(this));
+                downloadBtn.addEventListener('click', this.downloadFile.bind(this));
+
+                // Format selection change
+                formatSelect.addEventListener('change', this.updateConvertButton.bind(this));
+            }
+
+            handleDragOver(e) {
+                e.preventDefault();
+                document.getElementById('dragDropArea').classList.add('dragover');
+            }
+
+            handleDragLeave(e) {
+                e.preventDefault();
+                document.getElementById('dragDropArea').classList.remove('dragover');
+            }
+
+            handleDrop(e) {
+                e.preventDefault();
+                document.getElementById('dragDropArea').classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    this.processFile(files[0]);
+                }
+            }
+
+            handleFileSelect(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    this.processFile(file);
+                }
+            }
+
+            processFile(file) {
+                // Validate file type
+                if (file.type !== 'application/pdf') {
+                    this.showError('Please select a PDF file only.');
+                    return;
+                }
+
+                // Validate file size (50MB limit)
+                if (file.size > 50 * 1024 * 1024) {
+                    this.showError('File size must be less than 50MB.');
+                    return;
+                }
+
+                this.currentFile = file;
+                this.displayFileInfo(file);
+                this.updateConvertButton();
+                this.hideError();
+            }
+
+            displayFileInfo(file) {
+                const dragDropArea = document.getElementById('dragDropArea');
+                const fileInfo = document.getElementById('fileInfo');
+                const fileName = document.getElementById('fileName');
+                const fileSize = document.getElementById('fileSize');
+
+                dragDropArea.classList.add('has-file');
+                fileName.textContent = file.name;
+                fileSize.textContent = `${(file.size / (1024 * 1024)).toFixed(2)} MB • PDF Document`;
+                fileInfo.classList.add('show');
+            }
+
+            updateConvertButton() {
+                const convertBtn = document.getElementById('convertBtn');
+                const formatSelect = document.getElementById('formatSelect');
+                
+                convertBtn.disabled = !(this.currentFile && formatSelect.value);
+            }
+
+            async convertDocument() {
+                if (!this.currentFile) return;
+
+                const formatSelect = document.getElementById('formatSelect');
+                const format = formatSelect.value;
+                const englishOCR = document.getElementById('englishOCR').checked;
+                const banglaOCR = document.getElementById('banglaOCR').checked;
+
+                if (!format) {
+                    this.showError('Please select an output format.');
+                    return;
+                }
+
+                if (!englishOCR && !banglaOCR) {
+                    this.showError('Please select at least one OCR language.');
+                    return;
+                }
+
+                this.showProgress();
+                await this.simulateConversion(format, englishOCR, banglaOCR);
+            }
+
+            async simulateConversion(format, englishOCR, banglaOCR) {
+                const progressSteps = [
+                    { text: 'Reading PDF file...', progress: 10 },
+                    { text: 'Analyzing document structure...', progress: 25 },
+                    { text: 'Performing OCR recognition...', progress: 45 },
+                    { text: 'Processing text extraction...', progress: 65 },
+                    { text: 'Converting to ' + format.toUpperCase() + '...', progress: 85 },
+                    { text: 'Finalizing document...', progress: 100 }
+                ];
+
+                for (let step of progressSteps) {
+                    await this.updateProgress(step.text, step.progress);
+                    await this.delay(800 + Math.random() * 400);
+                }
+
+                this.generatePreview(format, englishOCR, banglaOCR);
+                this.hideProgress();
+                this.showSuccess('Document converted successfully!');
+                document.getElementById('downloadBtn').disabled = false;
+            }
+
+            async updateProgress(text, percentage) {
+                document.getElementById('progressText').textContent = text;
+                document.getElementById('progressFill').style.width = percentage + '%';
+                document.getElementById('progressPercentage').textContent = percentage + '%';
+            }
+
+            generatePreview(format, englishOCR, banglaOCR) {
+                const previewSection = document.getElementById('previewSection');
+                const previewContent = document.getElementById('previewContent');
+                const languageIndicator = document.getElementById('languageIndicator');
+
+                let languages = [];
+                if (englishOCR) languages.push('English');
+                if (banglaOCR) languages.push('বাংলা');
+                languageIndicator.textContent = languages.join(' + ');
+
+                let content = '';
+                
+                if (format === 'xlsx') {
+                    content = this.generateExcelPreview(englishOCR, banglaOCR);
+                } else {
+                    content = this.generateDocumentPreview(englishOCR, banglaOCR);
+                }
+
+                previewContent.innerHTML = content;
+                previewSection.classList.add('show');
+                this.convertedData = { format, content };
+            }
+
+            generateDocumentPreview(englishOCR, banglaOCR) {
+                let content = '<h2>Sample Converted Document</h2>';
+                
+                if (englishOCR) {
+                    content += `
+                        <h3>English Content</h3>
+                        <p>This is a sample of extracted English text from your PDF document. The OCR engine has successfully recognized and converted the text while maintaining formatting and structure.</p>
+                        <p><strong>Key Features:</strong></p>
+                        <ul>
+                            <li>High accuracy text recognition</li>
+                            <li>Preserved formatting and layout</li>
+                            <li>Support for various fonts and sizes</li>
+                        </ul>
+                    `;
+                }
+
+                if (banglaOCR) {
+                    content += `
+                        <h3 class="bangla-text">বাংলা কন্টেন্ট</h3>
+                        <p class="bangla-text">এটি আপনার পিডিএফ ডকুমেন্ট থেকে নিষ্কাশিত বাংলা টেক্সটের একটি নমুনা। OCR ইঞ্জিন সফলভাবে নিকোশ ফন্ট সহ বাংলা টেক্সট চিনতে এবং রূপান্তর করতে পেরেছে।</p>
+                        <p class="bangla-text"><strong>মূল বৈশিষ্ট্যসমূহ:</strong></p>
+                        <ul class="bangla-text">
+                            <li>উচ্চ নির্ভুলতার টেক্সট স্বীকৃতি</li>
+                            <li>সংরক্ষিত বিন্যাস এবং লেআউট</li>
+                            <li>বিভিন্ন ফন্ট এবং আকারের সমর্থন</li>
+                        </ul>
+                    `;
+                }
+
+                return content;
+            }
+
+            generateExcelPreview(englishOCR, banglaOCR) {
+                let content = '<div class="excel-preview"><table class="excel-table">';
+                content += '<thead><tr><th>Column A</th><th>Column B</th><th>Column C</th><th>Column D</th></tr></thead><tbody>';
+                
+                if (englishOCR) {
+                    content += `
+                        <tr><td>Sample Data</td><td>123.45</td><td>Text Content</td><td>2024-01-15</td></tr>
+                        <tr><td>Document Info</td><td>456.78</td><td>Extracted Text</td><td>2024-01-16</td></tr>
+                    `;
+                }
+
+                if (banglaOCR) {
+                    content += `
+                        <tr><td class="bangla-text">নমুনা ডেটা</td><td>789.12</td><td class="bangla-text">বাংলা টেক্সট</td><td>২০২৪-০১-১৭</td></tr>
+                        <tr><td class="bangla-text">ডকুমেন্ট তথ্য</td><td>321.65</td><td class="bangla-text">নিষ্কাশিত টেক্সট</td><td>২০২৪-০১-১৮</td></tr>
+                    `;
+                }
+
+                content += '</tbody></table></div>';
+                return content;
+            }
+
+            downloadFile() {
+                if (!this.convertedData) return;
+
+                const { format, content } = this.convertedData;
+                const fileName = this.currentFile.name.replace('.pdf', '.' + format);
+                
+                // Create blob based on format
+                let blob;
+                let mimeType;
+
+                switch (format) {
+                    case 'doc':
+                    case 'docx':
+                        mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+                        break;
+                    case 'xlsx':
+                        mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+                        break;
+                    default:
+                        mimeType = 'text/plain';
+                }
+
+                // For demo purposes, create a text file with the content
+                blob = new Blob([content.replace(/<[^>]*>/g, '')], { type: 'text/plain' });
+                
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                this.showSuccess(`File "${fileName}" downloaded successfully!`);
+            }
+
+            resetAll() {
+                if (confirm('Are you sure you want to reset all files and settings? This action cannot be undone.')) {
+                    this.currentFile = null;
+                    this.convertedData = null;
+                    
+                    // Reset UI elements
+                    document.getElementById('dragDropArea').classList.remove('has-file');
+                    document.getElementById('fileInfo').classList.remove('show');
+                    document.getElementById('fileInput').value = '';
+                    document.getElementById('formatSelect').value = '';
+                    document.getElementById('englishOCR').checked = true;
+                    document.getElementById('banglaOCR').checked = false;
+                    document.getElementById('convertBtn').disabled = true;
+                    document.getElementById('downloadBtn').disabled = true;
+                    
+                    this.hideProgress();
+                    this.hidePreview();
+                    this.hideError();
+                    this.hideSuccess();
+                }
+            }
+
+            showProgress() {
+                document.getElementById('progressSection').classList.add('show');
+            }
+
+            hideProgress() {
+                document.getElementById('progressSection').classList.remove('show');
+            }
+
+            hidePreview() {
+                document.getElementById('previewSection').classList.remove('show');
+            }
+
+            showError(message) {
+                document.getElementById('errorText').textContent = message;
+                document.getElementById('errorMessage').classList.add('show');
+            }
+
+            hideError() {
+                document.getElementById('errorMessage').classList.remove('show');
+            }
+
+            showSuccess(message) {
+                document.getElementById('successText').textContent = message;
+                document.getElementById('successMessage').classList.add('show');
+                setTimeout(() => this.hideSuccess(), 5000);
+            }
+
+            hideSuccess() {
+                document.getElementById('successMessage').classList.remove('show');
+            }
+
+            delay(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            new DocumentConverter();
+        });
+    </script>
+</body>
+</html>
