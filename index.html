@@ -641,7 +641,52 @@
                 }
 
                 this.showProgress();
-                await this.simulateConversion(format, englishOCR, banglaOCR);
+                this.updateProgress('Uploading file...', 5);
+
+                const formData = new FormData();
+                formData.append('pdfFile', this.currentFile);
+                formData.append('format', format);
+                formData.append('englishOcr', englishOCR.toString());
+                formData.append('banglaOcr', banglaOCR.toString());
+
+                try {
+                    const response = await fetch('/api/convert', { // This is your backend API route
+                        method: 'POST',
+                        body: formData,
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Conversion failed.');
+                    }
+
+                    // Get the blob for download
+                    const blob = await response.blob();
+                    const fileName = this.currentFile.name.replace('.pdf', `.${format}`);
+                    
+                    // Store blob and filename for download
+                    this.convertedData = { format, blob, fileName }; 
+
+                    this.updateProgress('Conversion complete!', 100);
+                    this.hideProgress();
+                    this.showSuccess('Document converted successfully!');
+                    document.getElementById('downloadBtn').disabled = false;
+
+                    // For preview, you'd typically embed an iframe or use a library to render DOCX/XLSX
+                    // For now, we'll just show a success message and enable download.
+                    document.getElementById('previewSection').classList.add('show');
+                    document.getElementById('previewContent').innerHTML = `
+                        <p>File converted successfully! Click download to get your file.</p>
+                        <p><strong>Note:</strong> Real-time preview of DOCX/XLSX in browser requires dedicated viewer libraries or services.</p>
+                    `;
+
+
+                } catch (error) {
+                    console.error('Frontend conversion error:', error);
+                    this.hideProgress();
+                    this.showError(error.message || 'An unexpected error occurred during conversion.');
+                    document.getElementById('downloadBtn').disabled = true;
+                }
             }
 
             async simulateConversion(format, englishOCR, banglaOCR) {
@@ -749,30 +794,9 @@
             }
 
             downloadFile() {
-                if (!this.convertedData) return;
+                if (!this.convertedData || !this.convertedData.blob) return;
 
-                const { format, content } = this.convertedData;
-                const fileName = this.currentFile.name.replace('.pdf', '.' + format);
-                
-                // Create blob based on format
-                let blob;
-                let mimeType;
-
-                switch (format) {
-                    case 'doc':
-                    case 'docx':
-                        mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-                        break;
-                    case 'xlsx':
-                        mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-                        break;
-                    default:
-                        mimeType = 'text/plain';
-                }
-
-                // For demo purposes, create a text file with the content
-                blob = new Blob([content.replace(/<[^>]*>/g, '')], { type: 'text/plain' });
-                
+                const { blob, fileName } = this.convertedData;
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
